@@ -8,10 +8,10 @@ let touch = { x: null, y: null, active: false };
 const dpr = window.devicePixelRatio || 1;
 
 const config = {
-    starsCount: 140,
-    connectionDist: 100,
-    colors: ['#82b4ff', '#c882ff', '#82fff0'], // Цвета для сияния
-    lensPower: 1.1 // Сила увеличения линзы
+    starsCount: 120,
+    connectionDist: 90,
+    colors: ['#82b4ff', '#c882ff', '#82fff0'],
+    lensPower: 1.15
 };
 
 function init() {
@@ -24,8 +24,8 @@ function init() {
         particles.push({
             x: Math.random() * window.innerWidth,
             y: Math.random() * window.innerHeight,
-            vx: (Math.random() - 0.5) * 0.25,
-            vy: (Math.random() - 0.5) * 0.25,
+            vx: (Math.random() - 0.5) * 0.2,
+            vy: (Math.random() - 0.5) * 0.2,
             size: Math.random() * 1.5 + 0.3,
             color: config.colors[Math.floor(Math.random() * config.colors.length)]
         });
@@ -33,8 +33,8 @@ function init() {
 }
 
 function draw() {
-    // Вместо очистки рисуем слой с прозрачностью 0.05 для эффекта шлейфа
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    // Эффект шлейфа (Северное сияние)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
     ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
     particles.forEach((p, i) => {
@@ -49,27 +49,26 @@ function draw() {
             let dy = touch.y - p.y;
             let dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < 150) {
-                p.x += dx * 0.015;
-                p.y += dy * 0.015;
+                p.x += dx * 0.02;
+                p.y += dy * 0.02;
             }
         }
 
-        // Рисуем цветные светящиеся звезды
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
-        ctx.shadowBlur = 4;
+        ctx.shadowBlur = 5;
         ctx.shadowColor = p.color;
         ctx.fill();
         ctx.shadowBlur = 0;
 
         for (let j = i + 1; j < particles.length; j++) {
             let p2 = particles[j];
-            let distLines = Math.sqrt((p.x - p2.x)**2 + (p.y - p2.y)**2);
-            if (distLines < config.connectionDist) {
+            let distL = Math.sqrt((p.x - p2.x)**2 + (p.y - p2.y)**2);
+            if (distL < config.connectionDist) {
                 ctx.beginPath();
                 ctx.strokeStyle = p.color;
-                ctx.globalAlpha = 0.2 * (1 - distLines / config.connectionDist);
+                ctx.globalAlpha = 0.2 * (1 - distL / config.connectionDist);
                 ctx.lineWidth = 0.5;
                 ctx.moveTo(p.x, p.y);
                 ctx.lineTo(p2.x, p2.y);
@@ -78,28 +77,27 @@ function draw() {
             }
         }
     });
-
     requestAnimationFrame(draw);
 }
 
-// Эффект гравитационной линзы (искажение фото)
-function handleMove(e) {
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const y = e.touches ? e.touches[0].clientY : e.clientY;
-    
-    touch.x = x;
-    touch.y = y;
+// Универсальный обработчик (мобилки + ПК)
+function handleAction(e) {
+    // Останавливаем стандартное поведение браузера (скролл)
+    if (e.cancelable) e.preventDefault();
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    touch.x = clientX;
+    touch.y = clientY;
     touch.active = true;
 
     if (img) {
-        // Вычисляем точку фокуса в процентах
-        const xPct = (x / window.innerWidth) * 100;
-        const yPct = (y / window.innerHeight) * 100;
-        
-        // Смещаем центр трансформации под палец
+        const xPct = (clientX / window.innerWidth) * 100;
+        const yPct = (clientY / window.innerHeight) * 100;
         img.style.transformOrigin = `${xPct}% ${yPct}%`;
         img.style.transform = `scale(${config.lensPower})`;
-        img.style.filter = 'brightness(0.85) contrast(1.2)';
+        img.style.filter = 'brightness(0.9) contrast(1.2)';
     }
 }
 
@@ -111,11 +109,14 @@ function handleEnd() {
     }
 }
 
-window.addEventListener('mousemove', handleMove);
-window.addEventListener('touchstart', handleMove);
-window.addEventListener('touchmove', handleMove);
+// Слушаем всё: и мышь, и касания
+window.addEventListener('mousedown', handleAction);
+window.addEventListener('mousemove', handleAction);
+window.addEventListener('mouseup', handleEnd);
+
+window.addEventListener('touchstart', handleAction, { passive: false });
+window.addEventListener('touchmove', handleAction, { passive: false });
 window.addEventListener('touchend', handleEnd);
-window.addEventListener('mouseleave', handleEnd);
 
 if (img.complete) photoWrapper.classList.add('loaded');
 else img.onload = () => photoWrapper.classList.add('loaded');
