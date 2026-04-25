@@ -17,11 +17,19 @@
 
     <canvas id="constellation"></canvas>
 
-    <script src="script.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').catch(()=>{});
         }
     </script>
+    <svg style="display: none;">
+        <defs>
+            <filter id="displacementFilter">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+                <feDisplacementMap in="SourceGraphic" in2="blur" scale="0" xChannelSelector="R" yChannelSelector="G" id="map" />
+            </filter>
+        </defs>
+    </svg>
+    <script src="script.js"></script>
 </body>
 </html>
