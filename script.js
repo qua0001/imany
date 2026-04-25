@@ -4,16 +4,16 @@ const photoWrapper = document.getElementById('photoWrapper');
 const img = document.querySelector('.photo-wrapper img');
 
 let particles = [];
-let touch = { x: null, y: null };
-let tilt = { x: 0, y: 0 }; // Для эффекта параллакса
+let touch = { x: null, y: null, active: false };
+let tilt = { x: 0, y: 0 }; 
 const dpr = window.devicePixelRatio || 1;
 
-// Настройки системы
+// Конфигурация системы
 const config = {
-    mainStarsCount: 80,
-    dustCount: 150,
-    connectionDist: 100,
-    gravityRadius: 150
+    starsCount: 150,       // Количество звезд
+    connectionDist: 100,   // Дистанция линий созвездий
+    gravityRadius: 150,    // Радиус притяжения к пальцу
+    pulseSpeed: 0.02       // Скорость мерцания
 };
 
 function init() {
@@ -22,39 +22,26 @@ function init() {
     ctx.scale(dpr, dpr);
     
     particles = [];
-
-    // Создаем основные звезды (созвездия)
-    for (let i = 0; i < config.mainStarsCount; i++) {
-        particles.push(createParticle(true));
+    for (let i = 0; i < config.starsCount; i++) {
+        particles.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            size: Math.random() * 1.3 + 0.2,
+            phase: Math.random() * Math.PI * 2
+        });
     }
-    // Создаем звездную пыль (глубина)
-    for (let i = 0; i < config.dustCount; i++) {
-        particles.push(createParticle(false));
-    }
-}
-
-function createParticle(isMain) {
-    return {
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        vx: (Math.random() - 0.5) * (isMain ? 0.2 : 0.1),
-        vy: (Math.random() - 0.5) * (isMain ? 0.2 : 0.1),
-        size: isMain ? Math.random() * 1.5 + 0.5 : Math.random() * 0.4,
-        isMain: isMain,
-        // Индивидуальный коэффициент параллакса для глубины
-        parallaxMult: isMain ? 1.5 : 0.5 
-    };
 }
 
 function draw() {
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-    // Плавное возвращение наклона в ноль
-    tilt.x *= 0.95;
-    tilt.y *= 0.95;
-
     particles.forEach((p, i) => {
-        // Движение
+        // 1. Движение и мерцание
+        p.phase += config.pulseSpeed;
+        const opacity = 0.4 + Math.sin(p.phase) * 0.4;
+
         p.x += p.vx;
         p.y += p.vy;
 
@@ -62,48 +49,45 @@ function draw() {
         if (p.x < 0 || p.x > window.innerWidth) p.vx *= -1;
         if (p.y < 0 || p.y > window.innerHeight) p.vy *= -1;
 
-        // Интерактив с касанием (притяжение)
-        if (touch.x !== null) {
+        // 2. Взаимодействие с касанием
+        if (touch.active) {
             let dx = touch.x - p.x;
             let dy = touch.y - p.y;
             let dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < config.gravityRadius) {
-                p.x += dx * 0.01;
-                p.y += dy * 0.01;
+                p.x += dx * 0.03;
+                p.y += dy * 0.03;
             }
         }
 
-        // Финальные координаты с учетом параллакса
-        const renderX = p.x + (tilt.x * p.parallaxMult * 20);
-        const renderY = p.y + (tilt.y * p.parallaxMult * 20);
+        // Применяем легкий параллакс от наклона/движения
+        const renderX = p.x + (tilt.x * 20);
+        const renderY = p.y + (tilt.y * 20);
 
-        // Рисуем точку
+        // 3. Отрисовка звезды
         ctx.beginPath();
         ctx.arc(renderX, renderY, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = p.isMain ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)';
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
         ctx.fill();
 
-        // Рисуем связи только для главных звезд
-        if (p.isMain) {
-            for (let j = i + 1; j < particles.length; j++) {
-                let p2 = particles[j];
-                if (p2.isMain) {
-                    const rX2 = p2.x + (tilt.x * p2.parallaxMult * 20);
-                    const rY2 = p2.y + (tilt.y * p2.parallaxMult * 20);
-                    
-                    let dxL = renderX - rX2;
-                    let dyL = renderY - rY2;
-                    let distLines = Math.sqrt(dxL * dxL + dyL * dyL);
+        // 4. Отрисовка линий созвездий
+        for (let j = i + 1; j < particles.length; j++) {
+            let p2 = particles[j];
+            const rX2 = p2.x + (tilt.x * 20);
+            const rY2 = p2.y + (tilt.y * 20);
+            
+            let dxL = renderX - rX2;
+            let dyL = renderY - rY2;
+            let distL = Math.sqrt(dxL * dxL + dyL * dyL);
 
-                    if (distLines < config.connectionDist) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = `rgba(140, 190, 255, ${0.3 * (1 - distLines / config.connectionDist)})`;
-                        ctx.lineWidth = 0.5;
-                        ctx.moveTo(renderX, renderY);
-                        ctx.lineTo(rX2, rY2);
-                        ctx.stroke();
-                    }
-                }
+            if (distL < config.connectionDist) {
+                ctx.beginPath();
+                const lineAlpha = (1 - distL / config.connectionDist) * 0.3 * opacity;
+                ctx.strokeStyle = `rgba(150, 200, 255, ${lineAlpha})`;
+                ctx.lineWidth = 0.5;
+                ctx.moveTo(renderX, renderY);
+                ctx.lineTo(rX2, rY2);
+                ctx.stroke();
             }
         }
     });
@@ -111,37 +95,47 @@ function draw() {
     requestAnimationFrame(draw);
 }
 
-// Обработка появления фото
+// Управление событиями и визуальными эффектами фото
+const handleInteraction = (e) => {
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+
+    touch.x = x;
+    touch.y = y;
+    touch.active = true;
+
+    // Параллакс эффект
+    tilt.x = (x / window.innerWidth) - 0.5;
+    tilt.y = (y / window.innerHeight) - 0.5;
+
+    // "Проявляем" фото при касании
+    if (img) {
+        img.style.filter = 'brightness(0.85) contrast(1.1) saturate(1.1)';
+    }
+};
+
+const stopInteraction = () => {
+    touch.active = false;
+    if (img) {
+        img.style.filter = 'brightness(0.65) contrast(1.1) saturate(1)';
+    }
+};
+
+// Слушатели событий
+window.addEventListener('mousemove', handleInteraction);
+window.addEventListener('touchstart', handleInteraction);
+window.addEventListener('touchmove', handleInteraction);
+window.addEventListener('touchend', stopInteraction);
+window.addEventListener('mouseleave', stopInteraction);
+
+// Инициализация при загрузке фото
 if (img.complete) {
     photoWrapper.classList.add('loaded');
 } else {
     img.onload = () => photoWrapper.classList.add('loaded');
 }
 
-// Слушатели событий
-window.addEventListener('touchstart', e => { 
-    touch.x = e.touches[0].clientX; 
-    touch.y = e.touches[0].clientY; 
-});
-
-window.addEventListener('touchmove', e => { 
-    touch.x = e.touches[0].clientX; 
-    touch.y = e.touches[0].clientY;
-    // Параллакс от движения пальца
-    tilt.x = (e.touches[0].clientX / window.innerWidth) - 0.5;
-    tilt.y = (e.touches[0].clientY / window.innerHeight) - 0.5;
-});
-
-window.addEventListener('touchend', () => { 
-    touch.x = null; 
-});
-
-// Для десктопной проверки (мышь)
-window.addEventListener('mousemove', e => {
-    tilt.x = (e.clientX / window.innerWidth) - 0.5;
-    tilt.y = (e.clientY / window.innerHeight) - 0.5;
-});
+window.addEventListener('resize', init);
 
 init();
 draw();
-window.addEventListener('resize', init);

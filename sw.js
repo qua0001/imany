@@ -1,4 +1,4 @@
-const CACHE_NAME = 'universe-imani-v4';
+const CACHE_NAME = 'universe-imani-v5';
 const assets = ['index.html', 'style.css', 'script.js', 'Imany.jpg'];
 
 self.addEventListener('install', (e) => {
