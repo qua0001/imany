@@ -1,80 +1,99 @@
 const canvas = document.getElementById('constellation');
 const ctx = canvas.getContext('2d');
+const img = document.getElementById('source-photo');
 
 let particles = [];
-const mouse = { x: null, y: null, radius: 150 };
+let touch = { x: null, y: null };
+const dpr = window.devicePixelRatio || 1;
 
 function init() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    ctx.scale(dpr, dpr);
+    
     particles = [];
-    // Делаем много мелких звезд
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 120; i++) {
         particles.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5,
-            size: Math.random() * 1.5 + 0.5
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: (Math.random() - 0.5) * 0.4,
+            vy: (Math.random() - 0.5) * 0.4,
+            size: Math.random() * 1.2 + 0.5
         });
     }
 }
 
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+
+    ctx.save();
     
-    for (let i = 0; i < particles.length; i++) {
-        let p = particles[i];
+    ctx.beginPath();
+    if (touch.x !== null) {
+        let gradient = ctx.createRadialGradient(touch.x, touch.y, 0, touch.x, touch.y, 150);
+        gradient.addColorStop(0, 'rgba(255,255,255,1)');
+        gradient.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = gradient;
+        ctx.arc(touch.x, touch.y, 150, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    particles.forEach(p => {
+        ctx.moveTo(p.x, p.y);
+        ctx.arc(p.x, p.y, 40, 0, Math.PI * 2);
+    });
+    ctx.clip();
+
+    const aspect = img.width / img.height;
+    let drawW = window.innerWidth;
+    let drawH = window.innerWidth / aspect;
+    if (drawH < window.innerHeight) {
+        drawH = window.innerHeight;
+        drawW = window.innerHeight * aspect;
+    }
+    ctx.drawImage(img, (window.innerWidth - drawW)/2, (window.innerHeight - drawH)/2, drawW, drawH);
+    ctx.restore();
+
+    particles.forEach((p, i) => {
         p.x += p.vx;
         p.y += p.vy;
 
-        // Отскок
-        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        if (p.x < 0 || p.x > window.innerWidth) p.vx *= -1;
+        if (p.y < 0 || p.y > window.innerHeight) p.vy *= -1;
 
-        // Отрисовка звезды
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.fill();
 
-        // Связи
         for (let j = i + 1; j < particles.length; j++) {
             let p2 = particles[j];
-            let dx = p.x - p2.x;
-            let dy = p.y - p2.y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-
+            let dist = Math.sqrt((p.x - p2.x)**2 + (p.y - p2.y)**2);
             if (dist < 100) {
                 ctx.beginPath();
-                ctx.strokeStyle = `rgba(100, 150, 255, ${1 - dist/100})`; // Голубоватый оттенок
+                ctx.strokeStyle = `rgba(150, 200, 255, ${0.4 * (1 - dist/100)})`;
                 ctx.lineWidth = 0.5;
                 ctx.moveTo(p.x, p.y);
                 ctx.lineTo(p2.x, p2.y);
                 ctx.stroke();
             }
         }
-    }
+    });
+
     requestAnimationFrame(draw);
 }
 
-// Управление на мобилке
-window.addEventListener('touchmove', (e) => {
-    mouse.x = e.touches[0].clientX;
-    mouse.y = e.touches[0].clientY;
-    
-    // При касании частицы немного разлетаются или ускоряются
-    particles.forEach(p => {
-        let dx = mouse.x - p.x;
-        let dy = mouse.y - p.y;
-        let dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < mouse.radius) {
-            p.x -= dx * 0.02;
-            p.y -= dy * 0.02;
-        }
-    });
-});
+const updateTouch = (e) => {
+    touch.x = e.touches[0].clientX;
+    touch.y = e.touches[0].clientY;
+};
+window.addEventListener('touchstart', updateTouch);
+window.addEventListener('touchmove', updateTouch);
+window.addEventListener('touchend', () => { touch.x = null; });
 
 window.addEventListener('resize', init);
-init();
-draw();
+img.onload = () => {
+    init();
+    draw();
+};
