@@ -1,16 +1,15 @@
 {
-  "name": "Imany Universe",
+  "name": "Universe",
   "short_name": "Universe",
   "start_url": "index.html",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
   "icons": [
     {
       "src": "Imany.jpg",
       "sizes": "512x512",
-      "type": "image/jpg",
+      "type": "image/jpeg",
       "purpose": "any maskable"
     }
   ]

@@ -1,11 +1,10 @@
+const CACHE_NAME = 'universe-imani-v4';
+const assets = ['index.html', 'style.css', 'script.js', 'Imany.jpg'];
+
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open('imani-v1').then((cache) => cache.addAll(['index.html', 'style.css', 'main.js']))
-  );
+    e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(assets)));
 });
 
 self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => response || fetch(e.request))
-  );
+    e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
 });
