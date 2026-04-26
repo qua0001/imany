@@ -1,73 +1,113 @@
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-body, html {
-    background: #000;
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-    position: relative;
-    // Критически важно для мобильных: запрещаем системные жесты
-    touch-action: none; 
-    -webkit-user-select: none;
-    user-select: none;
+body,
+html {
+  background: #000;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+  // Критически важно для мобильных: запрещаем системные жесты
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .photo-wrapper {
-    position: absolute;
-    top: 0;
-    left: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  overflow: hidden;
+  opacity: 1; // Установим 1 по умолчанию
+
+  img {
     width: 100%;
     height: 100%;
-    z-index: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    background: #000;
-    overflow: hidden;
+    object-fit: cover;
+    filter: brightness(0.7) contrast(1.1);
+    transition:
+      opacity 0.8s ease,
+      filter 0.4s ease,
+      transform 0.1s ease-out;
+    will-change: transform, filter, opacity;
+    opacity: 0; // Начинаем с нуля, JS проявит
+  }
 
-    &.loaded {
-        animation: fadeInPortrait 3s ease-out forwards;
-    }
-
-    img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        filter: brightness(0.7) contrast(1.1);
-        // Добавляем плавность для линзы
-        transition: filter 0.4s ease, transform 0.1s ease-out; 
-        will-change: transform, filter;
-    }
-
-    &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
-        pointer-events: none;
-    }
+  &.loaded img {
+    opacity: 1; // Когда обертка загружена, показываем фото
+  }
 }
 
 #constellation {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
-    mix-blend-mode: screen;
-    pointer-events: none; // Чтобы клики проходили сквозь канвас на обработчики window
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  mix-blend-mode: screen;
+  pointer-events: none; // Чтобы клики проходили сквозь канвас на обработчики window
 }
 
 @keyframes fadeInPortrait {
-    0% { opacity: 0; transform: scale(1.05); }
-    100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.water-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5; // Поверх всего
+  background: rgba(0, 30, 60, 0.5);
+  backdrop-filter: blur(8px); // Размытие, пока вода не расступилась
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.5s ease;
+
+  &.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+}
+
+// Применяем фильтр к фото, когда включен режим воды
+.water-mode img {
+  filter: url(#water-ripple) brightness(0.6) saturate(1.5) !important;
+  transition: none; // Рябь должна быть живой
+}
+
+// Кнопка перехода (стилизуй под свой вкус)
+.switch-mode-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  backdrop-filter: blur(5px);
+  font-family: sans-serif;
+  cursor: pointer;
 }

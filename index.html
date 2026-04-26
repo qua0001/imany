@@ -1,35 +1,41 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Universe for Her</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Universe for Her</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    
-    <div class="photo-wrapper" id="photoWrapper">
-        <img src="Imany.jpg" alt="Universe" class="fade-in-photo">
-    </div>
 
-    <canvas id="constellation"></canvas>
+  <div class="photo-wrapper" id="photoWrapper">
+    <img src="Imany.jpg" alt="Universe" id="mainImage">
+  </div>
 
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(()=>{});
-        }
-    </script>
-    <svg style="display: none;">
-        <defs>
-            <filter id="displacementFilter">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
-                <feDisplacementMap in="SourceGraphic" in2="blur" scale="0" xChannelSelector="R" yChannelSelector="G" id="map" />
-            </filter>
-        </defs>
-    </svg>
-    <script src="script.js"></script>
+  <canvas id="constellation"></canvas>
+
+  <svg style="position: fixed; pointer-events: none; opacity: 0; width: 0; height: 0;">
+    <defs>
+      <filter id="water-ripple">
+        <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" seed="1">
+          <animate attributeName="seed" from="1" to="100" dur="20s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" scale="30" />
+      </filter>
+    </defs>
+  </svg>
+
+  <script src="script.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => { });
+    }
+  </script>
 </body>
+
 </html>
